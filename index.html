@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Culled — Clean your camera roll</title>
+<meta name="description" content="Culled scans your photo library on-device and finds blurry, dark, duplicate, and screenshot photos so you can clear space fast.">
+<meta property="og:title" content="Culled — Clean your camera roll">
+<meta property="og:description" content="On-device photo cleaner. Find blurry, dark, duplicate, and screenshot photos. Swipe to delete.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%233a4a7a'/></svg>">
+<style>
+  :root {
+    --bg: #0A0A0C;
+    --surface: #131315;
+    --ink: #e5e1e4;
+    --muted: #8b90a0;
+    --accent: #adc6ff;
+    --accent2: #cdbdff;
+    --green: #53e16f;
+    --line: rgba(255,255,255,.08);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+  /* Nav */
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(20px);
+    background: rgba(10,10,12,.7);
+    border-bottom: 1px solid var(--line);
+  }
+  nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; letter-spacing: -.3px; }
+  .logo { width: 32px; height: 32px; border-radius: 9px; background: linear-gradient(135deg,#1a1a2e,#3a4a7a); display: grid; place-items: center; }
+  .logo svg { width: 18px; height: 18px; }
+  nav a.link { color: var(--muted); text-decoration: none; font-size: 14px; margin-left: 22px; transition: color .2s; }
+  nav a.link:hover { color: var(--ink); }
+
+  /* Hero */
+  .hero { position: relative; padding: 120px 0 90px; text-align: center; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: -200px 0 auto 0; height: 600px;
+    background: radial-gradient(closest-side, rgba(173,198,255,.16), transparent 70%);
+    pointer-events: none; filter: blur(20px);
+  }
+  .hero h1 {
+    position: relative;
+    font-size: clamp(40px, 7vw, 68px); font-weight: 800; letter-spacing: -2px; line-height: 1.04;
+    text-wrap: balance;
+  }
+  .hero h1 .grad {
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero p { position: relative; max-width: 540px; margin: 22px auto 0; color: var(--muted); font-size: 18px; }
+  .cta { position: relative; margin-top: 36px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 14px 26px; border-radius: 999px; font-weight: 600; font-size: 15px;
+    text-decoration: none; transition: transform .15s, box-shadow .2s;
+  }
+  .btn-primary {
+    background: linear-gradient(90deg, var(--accent), var(--accent2)); color: #001a41;
+    box-shadow: 0 8px 28px -8px rgba(173,198,255,.5);
+  }
+  .btn-primary:active { transform: scale(.97); }
+  .btn-ghost { border: 1px solid var(--line); color: var(--ink); background: rgba(255,255,255,.04); }
+  .btn-ghost:hover { background: rgba(255,255,255,.08); }
+
+  /* Stats ring mock */
+  .ring-wrap { position: relative; margin: 70px auto 0; width: 220px; height: 220px; display: grid; place-items: center; }
+  .ring { position: absolute; inset: 0; border-radius: 50%; border: 2.5px solid transparent;
+    background: linear-gradient(var(--bg),var(--bg)) padding-box,
+                linear-gradient(135deg,var(--accent),var(--accent2)) border-box;
+    box-shadow: 0 0 30px -8px rgba(173,198,255,.4);
+  }
+  .ring-num { font-size: 44px; font-weight: 800; letter-spacing: -1px; }
+  .ring-num span { font-size: 20px; color: var(--accent); }
+  .ring-label { font-size: 9px; letter-spacing: 1.8px; color: var(--muted); font-weight: 600; }
+
+  /* Features */
+  .features { padding: 90px 0; }
+  .sec-label { font-size: 12px; letter-spacing: 1px; color: var(--muted); font-weight: 600; text-transform: uppercase; margin-bottom: 14px; }
+  .features h2 { font-size: clamp(28px,4vw,40px); font-weight: 700; letter-spacing: -1px; max-width: 600px; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 44px; }
+  @media (max-width: 720px){ .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 20px; padding: 26px;
+  }
+  .card .ic { width: 42px; height: 42px; border-radius: 11px; background: rgba(173,198,255,.12); display: grid; place-items: center; margin-bottom: 16px; }
+  .card .ic svg { width: 20px; height: 20px; stroke: var(--accent); }
+  .card h3 { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+  .card p { color: var(--muted); font-size: 15px; }
+
+  /* Privacy strip */
+  .privacy-strip { padding: 60px 0; }
+  .privacy-strip .box {
+    background: rgba(83,225,111,.06); border: 1px solid rgba(83,225,111,.18); border-radius: 24px;
+    padding: 40px; text-align: center;
+  }
+  .privacy-strip .box h2 { font-size: 28px; font-weight: 700; letter-spacing: -.5px; margin-bottom: 10px; }
+  .privacy-strip .box p { color: var(--muted); max-width: 520px; margin: 0 auto; }
+
+  /* Footer */
+  footer { border-top: 1px solid var(--line); padding: 40px 0; margin-top: 40px; }
+  footer .wrap { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+  footer .copy { color: var(--muted); font-size: 13px; }
+  footer a { color: var(--muted); text-decoration: none; font-size: 13px; margin-left: 20px; transition: color .2s; }
+  footer a:hover { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="brand">
+      <span class="logo"><svg viewBox="0 0 24 24" fill="white"><path d="M3 8h18v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/><path d="M6 5h12M7.5 2h9" stroke="white" stroke-width="1.6" stroke-linecap="round" fill="none"/></svg></span>
+      Culled
+    </div>
+    <div>
+      <a class="link" href="#features">Features</a>
+      <a class="link" href="/privacy">Privacy</a>
+      <a class="link" href="/support">Support</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>Your camera roll,<br><span class="grad">curated.</span></h1>
+    <p>Culled scans your photos on-device and finds the blurry, dark, duplicate, and screenshot shots — so you delete with confidence.</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="#">Download on the App Store</a>
+      <a class="btn btn-ghost" href="#features">See how it works</a>
+    </div>
+
+    <div class="ring-wrap">
+      <div class="ring"></div>
+      <div style="text-align:center">
+        <div class="ring-num">4.2<span>GB</span></div>
+        <div class="ring-label">SPACE TO RECLAIM</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="features" id="features">
+  <div class="wrap">
+    <div class="sec-label">What it finds</div>
+    <h2>Years of clutter, sorted in one sitting.</h2>
+    <div class="grid">
+      <div class="card">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg></div>
+        <h3>Blurry & dark photos</h3>
+        <p>On-device analysis flags out-of-focus and underexposed shots you'll never keep.</p>
+      </div>
+      <div class="card">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V6a2 2 0 0 1 2-2h10"/></svg></div>
+        <h3>Duplicates & near-copies</h3>
+        <p>Burst shots and re-saves grouped together — keep the best, delete the rest.</p>
+      </div>
+      <div class="card">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M10 18h4"/></svg></div>
+        <h3>Screenshots</h3>
+        <p>The receipts, memes, and one-off captures that pile up without you noticing.</p>
+      </div>
+      <div class="card">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M4 12h16"/><path d="M12 4v16"/></svg></div>
+        <h3>Swipe to decide</h3>
+        <p>Review flagged photos one at a time with undo. Nothing leaves Recently Deleted for 30 days.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="privacy-strip">
+  <div class="wrap">
+    <div class="box">
+      <h2>Your photos never leave your device.</h2>
+      <p>Every scan runs entirely on your iPhone. Culled has no servers, no accounts, and collects zero data. <a href="/privacy" style="color:var(--accent)">Read our privacy policy</a>.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="copy">© 2026 Culled. All rights reserved.</div>
+    <div>
+      <a href="/privacy">Privacy Policy</a>
+      <a href="/support">Support</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
